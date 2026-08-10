@@ -84,7 +84,7 @@ async def start_handler(event):
     buttons = [
         [Button.inline(f"{EMOTE_PRODUCTS} Products", b"menu_products"), Button.inline(f"{EMOTE_MY_ORDERS} My Orders", b"menu_orders")],
         [Button.inline(f"{EMOTE_BALANCE} Balance", b"menu_balance"), Button.inline(f"{EMOTE_ACCOUNT} Account", b"menu_account")],
-        [Button.inline(f"{EMOTE_JOIN_CHANNEL} Join Channel", url="https://t.me/your_channel"), Button.inline(f"{EMOTE_LANGUAGE} Language", b"menu_language")],
+        [Button.url(f"{EMOTE_JOIN_CHANNEL} Join Channel", "https://t.me/your_channel"), Button.inline(f"{EMOTE_LANGUAGE} Language", b"menu_language")],
         [Button.inline(f"{EMOTE_REDEEM} Redeemcode", b"menu_redeem")]
     ]
     await event.respond(text, parse_mode='html', buttons=buttons)
@@ -123,7 +123,7 @@ async def back_to_start(event):
     buttons = [
         [Button.inline(f"{EMOTE_PRODUCTS} Products", b"menu_products"), Button.inline(f"{EMOTE_MY_ORDERS} My Orders", b"menu_orders")],
         [Button.inline(f"{EMOTE_BALANCE} Balance", b"menu_balance"), Button.inline(f"{EMOTE_ACCOUNT} Account", b"menu_account")],
-        [Button.inline(f"{EMOTE_JOIN_CHANNEL} Join Channel", url="https://t.me/your_channel"), Button.inline(f"{EMOTE_LANGUAGE} Language", b"menu_language")],
+        [Button.url(f"{EMOTE_JOIN_CHANNEL} Join Channel", "https://t.me/your_channel"), Button.inline(f"{EMOTE_LANGUAGE} Language", b"menu_language")],
         [Button.inline(f"{EMOTE_REDEEM} Redeemcode", b"menu_redeem")]
     ]
     await event.edit(text, parse_mode='html', buttons=buttons)
@@ -173,7 +173,7 @@ async def view_account_handler(event):
         f"Open the linked Telegram channel post and read it before confirming."
     )
     buttons = [
-        [Button.inline(f"{EMOTE_MEGAPHONE} Read Disclaimer", url="https://t.me/your_channel")],
+        [Button.url(f"{EMOTE_MEGAPHONE} Read Disclaimer", "https://t.me/your_channel")],
         [Button.inline(f"{EMOTE_CHECK} Accept & Buy", f"buy_confirm_{acc_id}")],
         [Button.inline(f"{EMOTE_BACK} Back", b"acc_country_co")]
     ]
