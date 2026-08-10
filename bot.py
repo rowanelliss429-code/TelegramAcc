@@ -17,8 +17,15 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Environment variables
-API_ID = int(os.getenv("API_ID", "17349"))
-API_HASH = os.getenv("API_HASH", "344583e45741c457fe1862106095a5eb")
+API_ID = os.getenv("API_ID")
+API_HASH = os.getenv("API_HASH")
+
+if API_ID:
+    API_ID = int(API_ID)
+
+if not API_ID or not API_HASH:
+    logger.error("API_ID or API_HASH environment variable is missing!")
+    exit(1)
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_IDS = [int(x) for x in os.getenv("ADMIN_IDS", "").split(",") if x.strip()]
 PORT = int(os.getenv("PORT", "10000"))
