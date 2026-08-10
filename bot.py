@@ -71,12 +71,12 @@ def get_start_text(balance):
     )
 
 def get_reply_keyboard():
-    # Use standard emojis for Reply Keyboard to ensure compatibility and small size
+    # Buttons with your emoji format
     return [
-        [Button.text("🛒 Products")],
-        [Button.text("📦 My Orders"), Button.text("👤 Account")],
-        [Button.text("👛 Balance"), Button.text("👋 Join Channel")],
-        [Button.text("🌐 Language"), Button.text("🎁 Redeemcode")]
+        [Button.text(f"<emoji id=5359805631320571519>▪️</emoji> Products")],
+        [Button.text(f"<emoji id=5258011929993026890>📦</emoji> My Orders"), Button.text(f"<emoji id=5323289282499064033>👤</emoji> Account")],
+        [Button.text(f"<emoji id=5404359483155570991>👛</emoji> Balance"), Button.text(f"<emoji id=6113870986484913105>👋</emoji> Join Channel")],
+        [Button.text(f"<emoji id=5879585266426973039>🌐</emoji> Language"), Button.text(f"<emoji id=5359664288241829619>🎁</emoji> Redeemcode")]
     ]
 
 @client.on(events.NewMessage(pattern='/start'))
@@ -85,17 +85,18 @@ async def start_handler(event):
         user_id = event.sender_id
         user = await get_user(user_id)
         balance = user.get("balance", 0)
+        # resize=True is crucial for smaller buttons
         await event.respond(
             get_start_text(balance), 
             parse_mode='html', 
-            buttons=get_reply_keyboard()
+            buttons=client.build_reply_markup(get_reply_keyboard(), resize=True)
         )
     except Exception as e:
         logger.error(f"Error in start_handler: {e}")
         logger.error(traceback.format_exc())
 
-# Handler for "Products" Reply Button
-@client.on(events.NewMessage(pattern='🛒 Products'))
+# Handler for "Products" Reply Button (matching the text with emoji)
+@client.on(events.NewMessage(pattern=r'.*Products'))
 async def products_reply_handler(event):
     try:
         text = f"<tg-emoji document_id=\"{EMOTE_SELECT_PROD_ID}\">🖤</tg-emoji><b>Select a product:</b>"
@@ -307,19 +308,12 @@ async def start_web_server():
 
 async def main():
     await start_web_server()
-    # Explicitly set resize_keyboard in build_reply_markup if needed
-    # But event.respond handles it if we pass markup directly
     await client.start(bot_token=BOT_TOKEN)
     logger.info("Bot is running...")
-    
-    # Set default reply markup for all responses if not specified
-    client.parse_mode = 'html'
-    
     await client.run_until_disconnected()
 
 if __name__ == "__main__":
     try:
-        # Use a more robust loop handling
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         loop.run_until_complete(main())
