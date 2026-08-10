@@ -71,13 +71,14 @@ def get_start_text(balance):
     )
 
 def get_reply_keyboard():
-    # Buttons with your emoji format
-    return [
-        [Button.text(f"<emoji id=5359805631320571519>▪️</emoji> Products")],
-        [Button.text(f"<emoji id=5258011929993026890>📦</emoji> My Orders"), Button.text(f"<emoji id=5323289282499064033>👤</emoji> Account")],
-        [Button.text(f"<emoji id=5404359483155570991>👛</emoji> Balance"), Button.text(f"<emoji id=6113870986484913105>👋</emoji> Join Channel")],
-        [Button.text(f"<emoji id=5879585266426973039>🌐</emoji> Language"), Button.text(f"<emoji id=5359664288241829619>🎁</emoji> Redeemcode")]
+    # Constructing rows for ReplyKeyboardMarkup
+    rows = [
+        [types.KeyboardButton(f"<emoji id=5359805631320571519>▪️</emoji> Products")],
+        [types.KeyboardButton(f"<emoji id=5258011929993026890>📦</emoji> My Orders"), types.KeyboardButton(f"<emoji id=5323289282499064033>👤</emoji> Account")],
+        [types.KeyboardButton(f"<emoji id=5404359483155570991>👛</emoji> Balance"), types.KeyboardButton(f"<emoji id=6113870986484913105>👋</emoji> Join Channel")],
+        [types.KeyboardButton(f"<emoji id=5879585266426973039>🌐</emoji> Language"), types.KeyboardButton(f"<emoji id=5359664288241829619>🎁</emoji> Redeemcode")]
     ]
+    return types.ReplyKeyboardMarkup(rows, resize_keyboard=True)
 
 @client.on(events.NewMessage(pattern='/start'))
 async def start_handler(event):
@@ -85,11 +86,10 @@ async def start_handler(event):
         user_id = event.sender_id
         user = await get_user(user_id)
         balance = user.get("balance", 0)
-        # resize=True is crucial for smaller buttons
         await event.respond(
             get_start_text(balance), 
             parse_mode='html', 
-            buttons=client.build_reply_markup(get_reply_keyboard(), resize=True)
+            buttons=get_reply_keyboard()
         )
     except Exception as e:
         logger.error(f"Error in start_handler: {e}")
