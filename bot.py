@@ -3,6 +3,7 @@ import logging
 import random
 import string
 import asyncio
+import traceback
 from aiohttp import web
 from datetime import datetime
 from telethon import TelegramClient, events, Button, types
@@ -70,8 +71,7 @@ def get_start_text(balance):
     )
 
 def get_reply_keyboard():
-    # Telegram KeyboardButtons do not support custom emoji IDs.
-    # We use standard emojis here to make it look clean and small.
+    # Use standard emojis for Reply Keyboard to ensure compatibility and small size
     return [
         [Button.text("🛒 Products")],
         [Button.text("📦 My Orders"), Button.text("👤 Account")],
@@ -81,193 +81,217 @@ def get_reply_keyboard():
 
 @client.on(events.NewMessage(pattern='/start'))
 async def start_handler(event):
-    user_id = event.sender_id
-    user = await get_user(user_id)
-    balance = user.get("balance", 0)
-    # resize=True makes buttons smaller and neat
-    await event.respond(
-        get_start_text(balance), 
-        parse_mode='html', 
-        buttons=client.build_reply_markup(get_reply_keyboard(), resize=True)
-    )
+    try:
+        user_id = event.sender_id
+        user = await get_user(user_id)
+        balance = user.get("balance", 0)
+        await event.respond(
+            get_start_text(balance), 
+            parse_mode='html', 
+            buttons=get_reply_keyboard()
+        )
+    except Exception as e:
+        logger.error(f"Error in start_handler: {e}")
+        logger.error(traceback.format_exc())
 
 # Handler for "Products" Reply Button
 @client.on(events.NewMessage(pattern='🛒 Products'))
 async def products_reply_handler(event):
-    text = f"<tg-emoji document_id=\"{EMOTE_SELECT_PROD_ID}\">🖤</tg-emoji><b>Select a product:</b>"
-    buttons = [
-        [Button.inline("Buy Telegram Accounts", b"buy_tg_accounts", icon=EMOTE_TG_ACC_ID)],
-        [Button.inline("Buy Telegram Comments", b"buy_tg_comments", icon=EMOTE_TG_COMM_ID)]
-    ]
-    await event.respond(text, parse_mode='html', buttons=buttons)
+    try:
+        text = f"<tg-emoji document_id=\"{EMOTE_SELECT_PROD_ID}\">🖤</tg-emoji><b>Select a product:</b>"
+        buttons = [
+            [Button.inline("Buy Telegram Accounts", b"buy_tg_accounts")],
+            [Button.inline("Buy Telegram Comments", b"buy_tg_comments")]
+        ]
+        await event.respond(text, parse_mode='html', buttons=buttons)
+    except Exception as e:
+        logger.error(f"Error in products_reply_handler: {e}")
 
 @client.on(events.CallbackQuery(data=b"buy_tg_accounts"))
 async def tg_accounts_handler(event):
-    text = f"<tg-emoji document_id=\"{EMOTE_SELECT_PROD_ID}\">🖤</tg-emoji><b>Select a product:</b>"
-    buttons = [
-        [Button.inline("+95 Myanmar Account . 2000ks", b"acc_country_mm", icon=EMOTE_MYANMAR_ID)],
-        [Button.inline("+57 Colombia Account . 1500ks", b"acc_country_co", icon=EMOTE_COLOMBIA_ID)],
-        [Button.inline("+1 UnitedState Account . 1500ks", b"acc_country_us", icon=EMOTE_US_ID)]
-    ]
-    await event.edit(text, parse_mode='html', buttons=buttons)
+    try:
+        text = f"<tg-emoji document_id=\"{EMOTE_SELECT_PROD_ID}\">🖤</tg-emoji><b>Select a product:</b>"
+        buttons = [
+            [Button.inline("+95 Myanmar Account . 2000ks", b"acc_country_mm")],
+            [Button.inline("+57 Colombia Account . 1500ks", b"acc_country_co")],
+            [Button.inline("+1 UnitedState Account . 1500ks", b"acc_country_us")]
+        ]
+        await event.edit(text, parse_mode='html', buttons=buttons)
+    except Exception as e:
+        logger.error(f"Error in tg_accounts_handler: {e}")
 
 @client.on(events.CallbackQuery(data=b"acc_country_co"))
 async def country_co_handler(event):
-    accounts = await get_available_accounts("CO")
-    stock_count = len(accounts)
-    text = (
-        f"<tg-emoji document_id=\"{EMOTE_CHOOSE_ID}\">➡️</tg-emoji><b>CHOOSE YOUR TELEGRAM ACCOUNT</b>\n"
-        f"━━━━━━━━━━━━━━━━\n"
-        f"<tg-emoji document_id=\"{EMOTE_TYPE_ID}\">🏷</tg-emoji><b>Type:</b> <tg-emoji document_id=\"{EMOTE_COLOMBIA_ID}\">🇨🇴</tg-emoji> +57\n"
-        f"<tg-emoji document_id=\"{EMOTE_PRODUCTS_ID}\">▪️</emoji> <b>Product:</b> Telegram Account\n"
-        f"<tg-emoji document_id=\"{EMOTE_PRICE_ID}\">🔖</tg-emoji><b>Price:</b> 1,500 Ks\n"
-        f"<tg-emoji document_id=\"{EMOTE_STOCK_ID}\">📦</tg-emoji> <b>In stock:</b> {stock_count} accounts\n"
-        f"<tg-emoji document_id=\"{EMOTE_PAGE_ID}\">📝</tg-emoji> Page 1 of 1\n"
-        f"━━━━━━━━━━━━━━━━\n"
-        f"<tg-emoji document_id=\"{EMOTE_TAP_ID}\">👇</tg-emoji><b>Tap a phone number below to continue.</b>"
-    )
-    buttons = []
-    for acc in accounts[:5]:
-        buttons.append([Button.inline(f"{acc['phone']}", f"view_acc_{acc['_id']}", icon=EMOTE_COLOMBIA_ID)])
-    await event.edit(text, parse_mode='html', buttons=buttons)
+    try:
+        accounts = await get_available_accounts("CO")
+        stock_count = len(accounts)
+        text = (
+            f"<tg-emoji document_id=\"{EMOTE_CHOOSE_ID}\">➡️</tg-emoji><b>CHOOSE YOUR TELEGRAM ACCOUNT</b>\n"
+            f"━━━━━━━━━━━━━━━━\n"
+            f"<tg-emoji document_id=\"{EMOTE_TYPE_ID}\">🏷</tg-emoji><b>Type:</b> <tg-emoji document_id=\"{EMOTE_COLOMBIA_ID}\">🇨🇴</tg-emoji> +57\n"
+            f"<tg-emoji document_id=\"{EMOTE_PRODUCTS_ID}\">▪️</emoji> <b>Product:</b> Telegram Account\n"
+            f"<tg-emoji document_id=\"{EMOTE_PRICE_ID}\">🔖</tg-emoji><b>Price:</b> 1,500 Ks\n"
+            f"<tg-emoji document_id=\"{EMOTE_STOCK_ID}\">📦</tg-emoji> <b>In stock:</b> {stock_count} accounts\n"
+            f"<tg-emoji document_id=\"{EMOTE_PAGE_ID}\">📝</tg-emoji> Page 1 of 1\n"
+            f"━━━━━━━━━━━━━━━━\n"
+            f"<tg-emoji document_id=\"{EMOTE_TAP_ID}\">👇</tg-emoji><b>Tap a phone number below to continue.</b>"
+        )
+        buttons = []
+        for acc in accounts[:5]:
+            buttons.append([Button.inline(f"{acc['phone']}", f"view_acc_{acc['_id']}")])
+        await event.edit(text, parse_mode='html', buttons=buttons)
+    except Exception as e:
+        logger.error(f"Error in country_co_handler: {e}")
 
 @client.on(events.CallbackQuery(pattern=b"view_acc_(.+)"))
 async def view_account_handler(event):
-    acc_id = event.pattern_match.group(1).decode()
-    account = await get_account_by_id(acc_id)
-    if not account:
-        await event.answer("Account already sold or not available!", alert=True)
-        return
-    text = (
-        f"<tg-emoji document_id=\"{EMOTE_BEFORE_BUY_ID}\">🔥</tg-emoji><b>BEFORE YOU BUY</b>\n"
-        f"━━━━━━━━━━━━━━━━\n"
-        f"<tg-emoji document_id=\"{EMOTE_PRODUCTS_ID}\">▪️</emoji> Telegram Colombia Account\n"
-        f"<tg-emoji document_id=\"{EMOTE_TYPE_ID}\">🏷</tg-emoji> <b>New account</b>\n"
-        f"<tg-emoji document_id=\"{EMOTE_COLOMBIA_ID}\">🇨🇴</tg-emoji> +57\n"
-        f"<tg-emoji document_id=\"{EMOTE_PRICE_ID}\">🔖</tg-emoji> 1,500 Ks\n"
-        f"━━━━━━━━━━━━━━━━\n"
-        f"<tg-emoji document_id=\"{EMOTE_WARNING_ID}\">⚠️</tg-emoji> Telegram restrictions are outside our control.\n"
-        f"<tg-emoji document_id=\"{EMOTE_LOCK_ID}\">🔒</tg-emoji> Request new login OTPs while the Bot remains connected.\n"
-        f"<tg-emoji document_id=\"{EMOTE_CHECK_ID}\">✅</tg-emoji> Once you successfully log in, the account is under your control.\n"
-        f"<tg-emoji document_id=\"{EMOTE_AIRPLANE_ID}\">✈️</tg-emoji> Change the email and 2FA immediately.\n\n"
-        f"Tap “Accept & Buy” to continue.\n\n"
-        f"<tg-emoji document_id=\"{EMOTE_PIN_ID}\">📌</tg-emoji> <b>PRODUCT DISCLAIMER</b>\n"
-        f"Open the linked Telegram channel post and read it before confirming."
-    )
-    buttons = [
-        [Button.url("Read Disclaimer", "https://t.me/your_channel", icon=EMOTE_MEGAPHONE_ID)],
-        [Button.inline("Accept & Buy", f"buy_confirm_{acc_id}", icon=EMOTE_CHECK_ID)]
-    ]
-    await event.edit(text, parse_mode='html', buttons=buttons)
+    try:
+        acc_id = event.pattern_match.group(1).decode()
+        account = await get_account_by_id(acc_id)
+        if not account:
+            await event.answer("Account already sold or not available!", alert=True)
+            return
+        text = (
+            f"<tg-emoji document_id=\"{EMOTE_BEFORE_BUY_ID}\">🔥</tg-emoji><b>BEFORE YOU BUY</b>\n"
+            f"━━━━━━━━━━━━━━━━\n"
+            f"<tg-emoji document_id=\"{EMOTE_PRODUCTS_ID}\">▪️</emoji> Telegram Colombia Account\n"
+            f"<tg-emoji document_id=\"{EMOTE_TYPE_ID}\">🏷</tg-emoji> <b>New account</b>\n"
+            f"<tg-emoji document_id=\"{EMOTE_COLOMBIA_ID}\">🇨🇴</tg-emoji> +57\n"
+            f"<tg-emoji document_id=\"{EMOTE_PRICE_ID}\">🔖</tg-emoji> 1,500 Ks\n"
+            f"━━━━━━━━━━━━━━━━\n"
+            f"<tg-emoji document_id=\"{EMOTE_WARNING_ID}\">⚠️</tg-emoji> Telegram restrictions are outside our control.\n"
+            f"<tg-emoji document_id=\"{EMOTE_LOCK_ID}\">🔒</tg-emoji> Request new login OTPs while the Bot remains connected.\n"
+            f"<tg-emoji document_id=\"{EMOTE_CHECK_ID}\">✅</tg-emoji> Once you successfully log in, the account is under your control.\n"
+            f"<tg-emoji document_id=\"{EMOTE_AIRPLANE_ID}\">✈️</tg-emoji> Change the email and 2FA immediately.\n\n"
+            f"Tap “Accept & Buy” to continue.\n\n"
+            f"<tg-emoji document_id=\"{EMOTE_PIN_ID}\">📌</tg-emoji> <b>PRODUCT DISCLAIMER</b>\n"
+            f"Open the linked Telegram channel post and read it before confirming."
+        )
+        buttons = [
+            [Button.url("Read Disclaimer", "https://t.me/your_channel")],
+            [Button.inline("Accept & Buy", f"buy_confirm_{acc_id}")]
+        ]
+        await event.edit(text, parse_mode='html', buttons=buttons)
+    except Exception as e:
+        logger.error(f"Error in view_account_handler: {e}")
 
 @client.on(events.CallbackQuery(pattern=b"buy_confirm_(.+)"))
 async def buy_confirm_handler(event):
-    user_id = event.sender_id
-    acc_id = event.pattern_match.group(1).decode()
-    account = await get_account_by_id(acc_id)
-    if not account:
-        await event.answer("Account not available!", alert=True)
-        return
-    user = await get_user(user_id)
-    balance = user.get("balance", 0)
-    price = account["price"]
-    if balance < price:
+    try:
+        user_id = event.sender_id
+        acc_id = event.pattern_match.group(1).decode()
+        account = await get_account_by_id(acc_id)
+        if not account:
+            await event.answer("Account not available!", alert=True)
+            return
+        user = await get_user(user_id)
+        balance = user.get("balance", 0)
+        price = account["price"]
+        if balance < price:
+            text = (
+                f"<tg-emoji document_id=\"{EMOTE_NO_BALANCE_ID}\">🚫</tg-emoji><b>လက်ကျန်ငွေမလောက်ပါ</b>\n\n"
+                f"AddFunds (ငွေဖြည့်) ပြီးမှ ဆက်လက်လုပ်ဆောင်ပါ"
+            )
+            buttons = [[Button.inline("AddFund", b"menu_balance")]]
+            await event.edit(text, parse_mode='html', buttons=buttons)
+            return
+        await update_balance(user_id, -price)
+        order_id = "#" + ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
+        await mark_account_as_sold(acc_id, user_id, order_id)
+        order_data = {
+            "order_id": order_id,
+            "user_id": user_id,
+            "phone": account["phone"],
+            "price": price,
+            "session_string": account["session_string"],
+            "created_at": datetime.utcnow()
+        }
+        await create_order(order_data)
+        updated_user = await get_user(user_id)
+        new_balance = updated_user.get("balance", 0)
         text = (
-            f"<tg-emoji document_id=\"{EMOTE_NO_BALANCE_ID}\">🚫</tg-emoji><b>လက်ကျန်ငွေမလောက်ပါ</b>\n\n"
-            f"AddFunds (ငွေဖြည့်) ပြီးမှ ဆက်လက်လုပ်ဆောင်ပါ"
+            f"<tg-emoji document_id=\"{EMOTE_CHECK_ID}\">✅</tg-emoji> <b>Purchase successful!</b>\n"
+            f"Order: <code>{order_id}</code>\n"
+            f"Product: Account\n"
+            f"Total: {price:,}Ks\n"
+            f"Balance: {new_balance:,} Ks\n"
+            f"Phone: {account['phone']}\n"
+            f"2FA: <code>12345678@Nn</code>\n\n"
+            f"<blockquote>Start Telegram login with this phone, then tap Get OTP. The bot checks for about 20 seconds and delivers one code</blockquote>\n\n"
+            f"<blockquote>ယခု နံပါတ်နှင့် အကောင့်ဝင်ပါ ထို့နောက် get otpနိပ်၍ otp ရယူပါ ထို့နောက်botမှပေးသည့်otp codeအားရိုက်ထည့်ပါ\n"
+            f"2step pswအား 2FAတွင်ပေးထားသည်</blockquote>"
         )
-        buttons = [[Button.inline("AddFund", b"menu_balance", icon=EMOTE_ADD_FUND_ID)]]
+        buttons = [[Button.inline("Get OTP", f"get_otp_{order_id}")]]
         await event.edit(text, parse_mode='html', buttons=buttons)
-        return
-    await update_balance(user_id, -price)
-    order_id = "#" + ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
-    await mark_account_as_sold(acc_id, user_id, order_id)
-    order_data = {
-        "order_id": order_id,
-        "user_id": user_id,
-        "phone": account["phone"],
-        "price": price,
-        "session_string": account["session_string"],
-        "created_at": datetime.utcnow()
-    }
-    await create_order(order_data)
-    updated_user = await get_user(user_id)
-    new_balance = updated_user.get("balance", 0)
-    text = (
-        f"<tg-emoji document_id=\"{EMOTE_CHECK_ID}\">✅</tg-emoji> <b>Purchase successful!</b>\n"
-        f"Order: <code>{order_id}</code>\n"
-        f"Product: Account\n"
-        f"Total: {price:,}Ks\n"
-        f"Balance: {new_balance:,} Ks\n"
-        f"Phone: {account['phone']}\n"
-        f"2FA: <code>12345678@Nn</code>\n\n"
-        f"<blockquote>Start Telegram login with this phone, then tap Get OTP. The bot checks for about 20 seconds and delivers one code</blockquote>\n\n"
-        f"<blockquote>ယခု နံပါတ်နှင့် အကောင့်ဝင်ပါ ထို့နောက် get otpနိပ်၍ otp ရယူပါ ထို့နောက်botမှပေးသည့်otp codeအားရိုက်ထည့်ပါ\n"
-        f"2step pswအား 2FAတွင်ပေးထားသည်</blockquote>"
-    )
-    buttons = [[Button.inline("Get OTP", f"get_otp_{order_id}", icon=EMOTE_GET_OTP_ID)]]
-    await event.edit(text, parse_mode='html', buttons=buttons)
+    except Exception as e:
+        logger.error(f"Error in buy_confirm_handler: {e}")
 
 @client.on(events.CallbackQuery(pattern=b"get_otp_(.+)"))
 async def get_otp_handler(event):
-    order_id = event.pattern_match.group(1).decode()
-    order = await get_order(order_id)
-    if not order:
-        await event.answer("Order not found!", alert=True)
-        return
-    await event.answer("Checking OTP from Telegram...", alert=False)
-    session_str = order["session_string"]
-    phone = order["phone"]
-    otp_code = None
     try:
-        async with TelegramClient(StringSession(session_str), API_ID, API_HASH) as tc:
-            messages = await tc.get_messages(777000, limit=3)
-            for msg in messages:
-                if msg.text and any(char.isdigit() for char in msg.text):
-                    otp_code = msg.text
-                    break
+        order_id = event.pattern_match.group(1).decode()
+        order = await get_order(order_id)
+        if not order:
+            await event.answer("Order not found!", alert=True)
+            return
+        await event.answer("Checking OTP from Telegram...", alert=False)
+        session_str = order["session_string"]
+        phone = order["phone"]
+        otp_code = None
+        try:
+            async with TelegramClient(StringSession(session_str), API_ID, API_HASH) as tc:
+                messages = await tc.get_messages(777000, limit=3)
+                for msg in messages:
+                    if msg.text and any(char.isdigit() for char in msg.text):
+                        otp_code = msg.text
+                        break
+        except Exception as e:
+            logger.error(f"Error fetching OTP for {phone}: {e}")
+        if not otp_code:
+            text = f"OTP မရရှိသေးပါ။ Telegram တွင် OTP ပို့ထားခြင်း ရှိမရှိ စစ်ဆေးပြီး Resend ကို နှိပ်ပါ။"
+        else:
+            text = (
+                f"OTP Code: <code>{otp_code}</code>\n"
+                f"2step password: <code>12345678@Nn</code>"
+            )
+        buttons = [
+            [Button.inline("Copy OTP", data=f"copy_otp_{order_id}")],
+            [Button.inline("Copy 2FA", data=f"copy_2fa")],
+            [Button.inline("Resend", f"get_otp_{order_id}")]
+        ]
+        await event.respond(text, parse_mode='html', buttons=buttons)
     except Exception as e:
-        logger.error(f"Error fetching OTP for {phone}: {e}")
-    if not otp_code:
-        text = f"OTP မရရှိသေးပါ။ Telegram တွင် OTP ပို့ထားခြင်း ရှိမရှိ စစ်ဆေးပြီး Resend ကို နှိပ်ပါ။"
-    else:
-        text = (
-            f"OTP Code: <code>{otp_code}</code>\n"
-            f"2step password: <code>12345678@Nn</code>"
-        )
-    buttons = [
-        [Button.inline("Copy OTP", data=f"copy_otp_{order_id}")],
-        [Button.inline("Copy 2FA", data=f"copy_2fa")],
-        [Button.inline("Resend", f"get_otp_{order_id}", icon=EMOTE_GET_OTP_ID)]
-    ]
-    await event.respond(text, parse_mode='html', buttons=buttons)
+        logger.error(f"Error in get_otp_handler: {e}")
 
 @client.on(events.NewMessage(pattern='/addnumber'))
 async def addnumber_handler(event):
-    if not is_admin(event.sender_id):
-        return
-    async with client.conversation(event.sender_id, timeout=60) as conv:
-        await conv.send_message("ဖုန်းနံပါတ်ကို ပို့ပေးပါ (ဥပမာ: +959752369511 သို့မဟုတ် +57xxxxxx):")
-        phone_resp = await conv.get_response()
-        phone = phone_resp.raw_text.strip()
-        await conv.send_message("Session String ကို ပို့ပေးပါ (Text သို့မဟုတ် .txt file):")
-        sess_resp = await conv.get_response()
-        session_string = ""
-        if sess_resp.document:
-            downloaded = await sess_resp.download_media(bytes)
-            session_string = downloaded.decode("utf-8").strip()
-        else:
-            session_string = sess_resp.raw_text.strip()
-        country = "CO"
-        price = 1500
-        if phone.startswith("+95"):
-            country = "MM"
-            price = 2000
-        elif phone.startswith("+1"):
-            country = "US"
+    try:
+        if not is_admin(event.sender_id):
+            return
+        async with client.conversation(event.sender_id, timeout=60) as conv:
+            await conv.send_message("ဖုန်းနံပါတ်ကို ပို့ပေးပါ (ဥပမာ: +959752369511 သို့မဟုတ် +57xxxxxx):")
+            phone_resp = await conv.get_response()
+            phone = phone_resp.raw_text.strip()
+            await conv.send_message("Session String ကို ပို့ပေးပါ (Text သို့မဟုတ် .txt file):")
+            sess_resp = await conv.get_response()
+            session_string = ""
+            if sess_resp.document:
+                downloaded = await sess_resp.download_media(bytes)
+                session_string = downloaded.decode("utf-8").strip()
+            else:
+                session_string = sess_resp.raw_text.strip()
+            country = "CO"
             price = 1500
-        await add_account(country, phone, session_string, price)
-        await event.respond(f"✅ Success! Added phone {phone} under country {country}.")
+            if phone.startswith("+95"):
+                country = "MM"
+                price = 2000
+            elif phone.startswith("+1"):
+                country = "US"
+                price = 1500
+            await add_account(country, phone, session_string, price)
+            await event.respond(f"✅ Success! Added phone {phone} under country {country}.")
+    except Exception as e:
+        logger.error(f"Error in addnumber_handler: {e}")
 
 async def handle_ping(request):
     return web.Response(text="Bot is running successfully!")
@@ -283,12 +307,24 @@ async def start_web_server():
 
 async def main():
     await start_web_server()
+    # Explicitly set resize_keyboard in build_reply_markup if needed
+    # But event.respond handles it if we pass markup directly
     await client.start(bot_token=BOT_TOKEN)
     logger.info("Bot is running...")
+    
+    # Set default reply markup for all responses if not specified
+    client.parse_mode = 'html'
+    
     await client.run_until_disconnected()
 
 if __name__ == "__main__":
     try:
-        asyncio.run(main())
+        # Use a more robust loop handling
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(main())
     except (KeyboardInterrupt, SystemExit):
         pass
+    except Exception as e:
+        logger.error(f"Fatal error: {e}")
+        logger.error(traceback.format_exc())
