@@ -32,16 +32,9 @@ if not API_ID or not API_HASH or not BOT_TOKEN:
 
 client = TelegramClient("bot_session", API_ID, API_HASH)
 
-# Premium Emotes IDs
+# Premium Emotes IDs (For Message Body)
 EMOTE_WELCOME_ID = 6260170796790980056
 EMOTE_WALLET_ID = 5328098344495490329
-EMOTE_PRODUCTS_ID = 5359805631320571519
-EMOTE_MY_ORDERS_ID = 5258011929993026890
-EMOTE_BALANCE_ID = 5404359483155570991
-EMOTE_ACCOUNT_ID = 5323289282499064033
-EMOTE_JOIN_CHANNEL_ID = 6113870986484913105
-EMOTE_LANGUAGE_ID = 5879585266426973039
-EMOTE_REDEEM_ID = 5359664288241829619
 EMOTE_SELECT_PROD_ID = 4900189275326252171
 EMOTE_TG_ACC_ID = 6257974552379270658
 EMOTE_TG_COMM_ID = 5472239203590888751
@@ -77,12 +70,13 @@ def get_start_text(balance):
     )
 
 def get_reply_keyboard():
-    # Using icon parameter for KeyboardButton if supported, else just text
+    # Telegram KeyboardButtons do not support custom emoji IDs.
+    # We use standard emojis here to make it look clean and small.
     return [
-        [Button.text("Products", icon=EMOTE_PRODUCTS_ID), Button.text("My Orders", icon=EMOTE_MY_ORDERS_ID)],
-        [Button.text("Balance", icon=EMOTE_BALANCE_ID), Button.text("Account", icon=EMOTE_ACCOUNT_ID)],
-        [Button.text("Join Channel", icon=EMOTE_JOIN_CHANNEL_ID), Button.text("Language", icon=EMOTE_LANGUAGE_ID)],
-        [Button.text("Redeemcode", icon=EMOTE_REDEEM_ID)]
+        [Button.text("🛒 Products")],
+        [Button.text("📦 My Orders"), Button.text("👤 Account")],
+        [Button.text("👛 Balance"), Button.text("👋 Join Channel")],
+        [Button.text("🌐 Language"), Button.text("🎁 Redeemcode")]
     ]
 
 @client.on(events.NewMessage(pattern='/start'))
@@ -90,10 +84,15 @@ async def start_handler(event):
     user_id = event.sender_id
     user = await get_user(user_id)
     balance = user.get("balance", 0)
-    await event.respond(get_start_text(balance), parse_mode='html', buttons=get_reply_keyboard())
+    # resize=True makes buttons smaller and neat
+    await event.respond(
+        get_start_text(balance), 
+        parse_mode='html', 
+        buttons=client.build_reply_markup(get_reply_keyboard(), resize=True)
+    )
 
 # Handler for "Products" Reply Button
-@client.on(events.NewMessage(pattern='Products'))
+@client.on(events.NewMessage(pattern='🛒 Products'))
 async def products_reply_handler(event):
     text = f"<tg-emoji document_id=\"{EMOTE_SELECT_PROD_ID}\">🖤</tg-emoji><b>Select a product:</b>"
     buttons = [
