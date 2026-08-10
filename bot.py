@@ -5,7 +5,7 @@ import string
 import asyncio
 from aiohttp import web
 from datetime import datetime
-from telethon import TelegramClient, events, Button
+from telethon import TelegramClient, events, Button, types
 from telethon.sessions import StringSession
 from database import (
     get_user, update_balance, add_account, get_available_accounts,
@@ -32,12 +32,9 @@ if not API_ID or not API_HASH or not BOT_TOKEN:
 
 client = TelegramClient("bot_session", API_ID, API_HASH)
 
-# Premium Emotes IDs (Integer IDs for Telethon button icon parameter and HTML for messages)
-# /start message emotes
+# Premium Emotes IDs
 EMOTE_WELCOME_ID = 6260170796790980056
 EMOTE_WALLET_ID = 5328098344495490329
-
-# Button emotes IDs
 EMOTE_PRODUCTS_ID = 5359805631320571519
 EMOTE_MY_ORDERS_ID = 5258011929993026890
 EMOTE_BALANCE_ID = 5404359483155570991
@@ -45,25 +42,18 @@ EMOTE_ACCOUNT_ID = 5323289282499064033
 EMOTE_JOIN_CHANNEL_ID = 6113870986484913105
 EMOTE_LANGUAGE_ID = 5879585266426973039
 EMOTE_REDEEM_ID = 5359664288241829619
-
-# Product selection emotes
 EMOTE_SELECT_PROD_ID = 4900189275326252171
 EMOTE_TG_ACC_ID = 6257974552379270658
 EMOTE_TG_COMM_ID = 5472239203590888751
-
-# Country flags emotes
 EMOTE_MYANMAR_ID = 6260246207826759565
 EMOTE_COLOMBIA_ID = 5294111658396895748
 EMOTE_US_ID = 5987769694407368809
-
-# Details emotes
 EMOTE_CHOOSE_ID = 6159042351537853617
 EMOTE_TYPE_ID = 5298877105000439431
 EMOTE_PRICE_ID = 6039495948353146588
 EMOTE_STOCK_ID = 5323289282499064033
 EMOTE_PAGE_ID = 5197219609970758159
 EMOTE_TAP_ID = 5231102735817918643
-
 EMOTE_BEFORE_BUY_ID = 5864114012542736772
 EMOTE_WARNING_ID = 5420323339723881652
 EMOTE_LOCK_ID = 5296369303661067030
@@ -81,17 +71,18 @@ def is_admin(user_id: int):
 
 def get_start_text(balance):
     return (
-        f"<emoji id={EMOTE_WELCOME_ID}>🍬</emoji><b>DigitalShopMm မှ ကြိုဆိုပါတယ်</b>\n\n"
+        f"<tg-emoji document_id=\"{EMOTE_WELCOME_ID}\">🍬</tg-emoji><b>DigitalShopMm မှ ကြိုဆိုပါတယ်</b>\n\n"
         f"🛍Digital Products နှင့် Services များကို ငွေဖြည့်သွင်းပြီး လိုချင်သည့် ပစ္စည်းကို တိုက်ရိုက် လျှင်မြန်စွာဝယ်ယူနိုင်ပါသည်🛍\n\n"
-        f"<emoji id={EMOTE_WALLET_ID}>💳</emoji>Wallet Balance: {balance:,} Ks"
+        f"<tg-emoji document_id=\"{EMOTE_WALLET_ID}\">💳</tg-emoji>Wallet Balance: {balance:,} Ks"
     )
 
-def get_start_buttons():
+def get_reply_keyboard():
+    # Using icon parameter for KeyboardButton if supported, else just text
     return [
-        [Button.inline("Products", b"menu_products", icon=EMOTE_PRODUCTS_ID), Button.inline("My Orders", b"menu_orders", icon=EMOTE_MY_ORDERS_ID)],
-        [Button.inline("Balance", b"menu_balance", icon=EMOTE_BALANCE_ID), Button.inline("Account", b"menu_account", icon=EMOTE_ACCOUNT_ID)],
-        [Button.url("Join Channel", "https://t.me/your_channel", icon=EMOTE_JOIN_CHANNEL_ID), Button.inline("Language", b"menu_language", icon=EMOTE_LANGUAGE_ID)],
-        [Button.inline("Redeemcode", b"menu_redeem", icon=EMOTE_REDEEM_ID)]
+        [Button.text("Products", icon=EMOTE_PRODUCTS_ID), Button.text("My Orders", icon=EMOTE_MY_ORDERS_ID)],
+        [Button.text("Balance", icon=EMOTE_BALANCE_ID), Button.text("Account", icon=EMOTE_ACCOUNT_ID)],
+        [Button.text("Join Channel", icon=EMOTE_JOIN_CHANNEL_ID), Button.text("Language", icon=EMOTE_LANGUAGE_ID)],
+        [Button.text("Redeemcode", icon=EMOTE_REDEEM_ID)]
     ]
 
 @client.on(events.NewMessage(pattern='/start'))
@@ -99,33 +90,25 @@ async def start_handler(event):
     user_id = event.sender_id
     user = await get_user(user_id)
     balance = user.get("balance", 0)
-    await event.respond(get_start_text(balance), parse_mode='html', buttons=get_start_buttons())
+    await event.respond(get_start_text(balance), parse_mode='html', buttons=get_reply_keyboard())
 
-@client.on(events.CallbackQuery(data=b"menu_start"))
-async def back_to_start(event):
-    user_id = event.sender_id
-    user = await get_user(user_id)
-    balance = user.get("balance", 0)
-    await event.edit(get_start_text(balance), parse_mode='html', buttons=get_start_buttons())
-
-@client.on(events.CallbackQuery(data=b"menu_products"))
-async def products_handler(event):
-    text = f"<emoji id={EMOTE_SELECT_PROD_ID}>🖤</emoji><b>Select a product:</b>"
+# Handler for "Products" Reply Button
+@client.on(events.NewMessage(pattern='Products'))
+async def products_reply_handler(event):
+    text = f"<tg-emoji document_id=\"{EMOTE_SELECT_PROD_ID}\">🖤</tg-emoji><b>Select a product:</b>"
     buttons = [
         [Button.inline("Buy Telegram Accounts", b"buy_tg_accounts", icon=EMOTE_TG_ACC_ID)],
-        [Button.inline("Buy Telegram Comments", b"buy_tg_comments", icon=EMOTE_TG_COMM_ID)],
-        [Button.inline("Back", b"menu_start", icon=EMOTE_BACK_ID)]
+        [Button.inline("Buy Telegram Comments", b"buy_tg_comments", icon=EMOTE_TG_COMM_ID)]
     ]
-    await event.edit(text, parse_mode='html', buttons=buttons)
+    await event.respond(text, parse_mode='html', buttons=buttons)
 
 @client.on(events.CallbackQuery(data=b"buy_tg_accounts"))
 async def tg_accounts_handler(event):
-    text = f"<emoji id={EMOTE_SELECT_PROD_ID}>🖤</emoji><b>Select a product:</b>"
+    text = f"<tg-emoji document_id=\"{EMOTE_SELECT_PROD_ID}\">🖤</tg-emoji><b>Select a product:</b>"
     buttons = [
         [Button.inline("+95 Myanmar Account . 2000ks", b"acc_country_mm", icon=EMOTE_MYANMAR_ID)],
         [Button.inline("+57 Colombia Account . 1500ks", b"acc_country_co", icon=EMOTE_COLOMBIA_ID)],
-        [Button.inline("+1 UnitedState Account . 1500ks", b"acc_country_us", icon=EMOTE_US_ID)],
-        [Button.inline("Back", b"menu_products", icon=EMOTE_BACK_ID)]
+        [Button.inline("+1 UnitedState Account . 1500ks", b"acc_country_us", icon=EMOTE_US_ID)]
     ]
     await event.edit(text, parse_mode='html', buttons=buttons)
 
@@ -134,20 +117,19 @@ async def country_co_handler(event):
     accounts = await get_available_accounts("CO")
     stock_count = len(accounts)
     text = (
-        f"<emoji id={EMOTE_CHOOSE_ID}>➡️</emoji><b>CHOOSE YOUR TELEGRAM ACCOUNT</b>\n"
+        f"<tg-emoji document_id=\"{EMOTE_CHOOSE_ID}\">➡️</tg-emoji><b>CHOOSE YOUR TELEGRAM ACCOUNT</b>\n"
         f"━━━━━━━━━━━━━━━━\n"
-        f"<emoji id={EMOTE_TYPE_ID}>🏷</emoji><b>Type:</b> <emoji id={EMOTE_COLOMBIA_ID}>🇨🇴</emoji> +57\n"
-        f"<emoji id={EMOTE_PRODUCTS_ID}>▪️</emoji> <b>Product:</b> Telegram Account\n"
-        f"<emoji id={EMOTE_PRICE_ID}>🔖</emoji><b>Price:</b> 1,500 Ks\n"
-        f"<emoji id={EMOTE_STOCK_ID}>📦</emoji> <b>In stock:</b> {stock_count} accounts\n"
-        f"<emoji id={EMOTE_PAGE_ID}>📝</emoji> Page 1 of 1\n"
+        f"<tg-emoji document_id=\"{EMOTE_TYPE_ID}\">🏷</tg-emoji><b>Type:</b> <tg-emoji document_id=\"{EMOTE_COLOMBIA_ID}\">🇨🇴</tg-emoji> +57\n"
+        f"<tg-emoji document_id=\"{EMOTE_PRODUCTS_ID}\">▪️</emoji> <b>Product:</b> Telegram Account\n"
+        f"<tg-emoji document_id=\"{EMOTE_PRICE_ID}\">🔖</tg-emoji><b>Price:</b> 1,500 Ks\n"
+        f"<tg-emoji document_id=\"{EMOTE_STOCK_ID}\">📦</tg-emoji> <b>In stock:</b> {stock_count} accounts\n"
+        f"<tg-emoji document_id=\"{EMOTE_PAGE_ID}\">📝</tg-emoji> Page 1 of 1\n"
         f"━━━━━━━━━━━━━━━━\n"
-        f"<emoji id={EMOTE_TAP_ID}>👇</emoji><b>Tap a phone number below to continue.</b>"
+        f"<tg-emoji document_id=\"{EMOTE_TAP_ID}\">👇</tg-emoji><b>Tap a phone number below to continue.</b>"
     )
     buttons = []
     for acc in accounts[:5]:
         buttons.append([Button.inline(f"{acc['phone']}", f"view_acc_{acc['_id']}", icon=EMOTE_COLOMBIA_ID)])
-    buttons.append([Button.inline("Back", b"buy_tg_accounts", icon=EMOTE_BACK_ID)])
     await event.edit(text, parse_mode='html', buttons=buttons)
 
 @client.on(events.CallbackQuery(pattern=b"view_acc_(.+)"))
@@ -158,25 +140,24 @@ async def view_account_handler(event):
         await event.answer("Account already sold or not available!", alert=True)
         return
     text = (
-        f"<emoji id={EMOTE_BEFORE_BUY_ID}>🔥</emoji><b>BEFORE YOU BUY</b>\n"
+        f"<tg-emoji document_id=\"{EMOTE_BEFORE_BUY_ID}\">🔥</tg-emoji><b>BEFORE YOU BUY</b>\n"
         f"━━━━━━━━━━━━━━━━\n"
-        f"<emoji id={EMOTE_PRODUCTS_ID}>▪️</emoji> Telegram Colombia Account\n"
-        f"<emoji id={EMOTE_TYPE_ID}>🏷</emoji> <b>New account</b>\n"
-        f"<emoji id={EMOTE_COLOMBIA_ID}>🇨🇴</emoji> +57\n"
-        f"<emoji id={EMOTE_PRICE_ID}>🔖</emoji> 1,500 Ks\n"
+        f"<tg-emoji document_id=\"{EMOTE_PRODUCTS_ID}\">▪️</emoji> Telegram Colombia Account\n"
+        f"<tg-emoji document_id=\"{EMOTE_TYPE_ID}\">🏷</tg-emoji> <b>New account</b>\n"
+        f"<tg-emoji document_id=\"{EMOTE_COLOMBIA_ID}\">🇨🇴</tg-emoji> +57\n"
+        f"<tg-emoji document_id=\"{EMOTE_PRICE_ID}\">🔖</tg-emoji> 1,500 Ks\n"
         f"━━━━━━━━━━━━━━━━\n"
-        f"<emoji id={EMOTE_WARNING_ID}>⚠️</emoji> Telegram restrictions are outside our control.\n"
-        f"<emoji id={EMOTE_LOCK_ID}>🔒</emoji> Request new login OTPs while the Bot remains connected.\n"
-        f"<emoji id={EMOTE_CHECK_ID}>✅</emoji> Once you successfully log in, the account is under your control.\n"
-        f"<emoji id={EMOTE_AIRPLANE_ID}>✈️</emoji> Change the email and 2FA immediately.\n\n"
+        f"<tg-emoji document_id=\"{EMOTE_WARNING_ID}\">⚠️</tg-emoji> Telegram restrictions are outside our control.\n"
+        f"<tg-emoji document_id=\"{EMOTE_LOCK_ID}\">🔒</tg-emoji> Request new login OTPs while the Bot remains connected.\n"
+        f"<tg-emoji document_id=\"{EMOTE_CHECK_ID}\">✅</tg-emoji> Once you successfully log in, the account is under your control.\n"
+        f"<tg-emoji document_id=\"{EMOTE_AIRPLANE_ID}\">✈️</tg-emoji> Change the email and 2FA immediately.\n\n"
         f"Tap “Accept & Buy” to continue.\n\n"
-        f"<emoji id={EMOTE_PIN_ID}>📌</emoji> <b>PRODUCT DISCLAIMER</b>\n"
+        f"<tg-emoji document_id=\"{EMOTE_PIN_ID}\">📌</tg-emoji> <b>PRODUCT DISCLAIMER</b>\n"
         f"Open the linked Telegram channel post and read it before confirming."
     )
     buttons = [
         [Button.url("Read Disclaimer", "https://t.me/your_channel", icon=EMOTE_MEGAPHONE_ID)],
-        [Button.inline("Accept & Buy", f"buy_confirm_{acc_id}", icon=EMOTE_CHECK_ID)],
-        [Button.inline("Back", b"acc_country_co", icon=EMOTE_BACK_ID)]
+        [Button.inline("Accept & Buy", f"buy_confirm_{acc_id}", icon=EMOTE_CHECK_ID)]
     ]
     await event.edit(text, parse_mode='html', buttons=buttons)
 
@@ -193,7 +174,7 @@ async def buy_confirm_handler(event):
     price = account["price"]
     if balance < price:
         text = (
-            f"<emoji id={EMOTE_NO_BALANCE_ID}>🚫</emoji><b>လက်ကျန်ငွေမလောက်ပါ</b>\n\n"
+            f"<tg-emoji document_id=\"{EMOTE_NO_BALANCE_ID}\">🚫</tg-emoji><b>လက်ကျန်ငွေမလောက်ပါ</b>\n\n"
             f"AddFunds (ငွေဖြည့်) ပြီးမှ ဆက်လက်လုပ်ဆောင်ပါ"
         )
         buttons = [[Button.inline("AddFund", b"menu_balance", icon=EMOTE_ADD_FUND_ID)]]
@@ -214,7 +195,7 @@ async def buy_confirm_handler(event):
     updated_user = await get_user(user_id)
     new_balance = updated_user.get("balance", 0)
     text = (
-        f"<emoji id={EMOTE_CHECK_ID}>✅</emoji> <b>Purchase successful!</b>\n"
+        f"<tg-emoji document_id=\"{EMOTE_CHECK_ID}\">✅</tg-emoji> <b>Purchase successful!</b>\n"
         f"Order: <code>{order_id}</code>\n"
         f"Product: Account\n"
         f"Total: {price:,}Ks\n"
@@ -225,10 +206,7 @@ async def buy_confirm_handler(event):
         f"<blockquote>ယခု နံပါတ်နှင့် အကောင့်ဝင်ပါ ထို့နောက် get otpနိပ်၍ otp ရယူပါ ထို့နောက်botမှပေးသည့်otp codeအားရိုက်ထည့်ပါ\n"
         f"2step pswအား 2FAတွင်ပေးထားသည်</blockquote>"
     )
-    buttons = [
-        [Button.inline("Get OTP", f"get_otp_{order_id}", icon=EMOTE_GET_OTP_ID)],
-        [Button.inline("Main Menu", b"menu_start", icon=EMOTE_BACK_ID)]
-    ]
+    buttons = [[Button.inline("Get OTP", f"get_otp_{order_id}", icon=EMOTE_GET_OTP_ID)]]
     await event.edit(text, parse_mode='html', buttons=buttons)
 
 @client.on(events.CallbackQuery(pattern=b"get_otp_(.+)"))
@@ -261,8 +239,7 @@ async def get_otp_handler(event):
     buttons = [
         [Button.inline("Copy OTP", data=f"copy_otp_{order_id}")],
         [Button.inline("Copy 2FA", data=f"copy_2fa")],
-        [Button.inline("Resend", f"get_otp_{order_id}", icon=EMOTE_GET_OTP_ID)],
-        [Button.inline("Main Menu", b"menu_start", icon=EMOTE_BACK_ID)]
+        [Button.inline("Resend", f"get_otp_{order_id}", icon=EMOTE_GET_OTP_ID)]
     ]
     await event.respond(text, parse_mode='html', buttons=buttons)
 
